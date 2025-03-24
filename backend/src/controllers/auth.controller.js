@@ -1,15 +1,16 @@
+// Controlling Routes
 
 // sign up
 export const signup = (req, res) => {
-    res.send("signup route");
-  };
+  res.send("signup route");
+};
 
-  // log in
+// log in
 export const login = (req, res) => {
-    res.send("login route");
-  };
+  res.send("login route");
+};
 
-  // log out
+// log out
 export const logout = (req, res) => {
-    res.send("logout route");
-  };
+  res.send("logout route");
+};
