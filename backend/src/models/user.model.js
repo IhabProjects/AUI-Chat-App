@@ -25,16 +25,18 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: ["Student", "Faculty"],
+      default: "",
     },
     major: {
       type: String,
       required: true,
-      // TODO: Add An Array of all possible Majors in AUI
+      enum:["Computer Science", "General Engineering", "Engineering and Management Science", "Business Administration", "International Studies","Communication Studies","Human Resource Development","Sustainable Energy Management", "International Trade", "Business Administration", "International Studies and Diplomacy", "North African and Middle Eastern Studies"]
     },
     school: {
       type: String,
       required: true,
       enum: ["SSE", "SHSS", "BA"],
+      default: "",
     },
     profilePic: {
       type: String,

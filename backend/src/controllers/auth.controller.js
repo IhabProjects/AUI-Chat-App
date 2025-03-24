@@ -1,12 +1,17 @@
 // Controlling Routes
 
+import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
-import { bcrypt } from "bcryptjs";
+import bcrypt from "bcryptjs";
 
 // sign up
 export const signup = async (req, res) => {
-  const { fullName, email, password, auiId } = req.body;
+  const { fullName, email, password, auiId, role, school, major } = req.body;
   try {
+    // Checking if user inputs empty field
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
     // Check if password length is < 6
     if (password.length < 6) {
       return res
@@ -17,10 +22,10 @@ export const signup = async (req, res) => {
     const existingUser = await User.findOne({ $or: [{ email }, { auiId }] });
     // will enter this if only if a user exists with those data
     if (existingUser) {
-      if (existingUser.email == email) {
+      if (existingUser.email === email) {
         return res.status(400).json({ message: "Email already exists" });
       }
-      if ((existingUser.auiId = auiId)) {
+      if (existingUser.auiId === auiId) {
         return res.status(400).json({ message: "AUI ID already exists" });
       }
     }
@@ -34,18 +39,34 @@ export const signup = async (req, res) => {
       email,
       password: hashedPassword,
       auiId,
+      role,
+      major,
+      school,
     });
 
     //Checking if user is created correctly
     if (newUser) {
-        //Generate jwt (jason web token) here
+      //Generate jwt (jason web token) here
+      generateToken(newUser._id, res);
+      await newUser.save();
+
+      res.status(201).json({
+        _id: newUser._id,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        auiId: newUser.auiId,
+        profilePic: newUser.profilePic,
+        role: newUser.role,
+        major: newUser.major,
+        school: newUser.school,
+      });
     } else {
-        res.status(400).json({message: "Invalid User Data"})
+      res.status(400).json({ message: "Invalid User Data" });
     }
-
-
-
-  } catch (error) {}
+  } catch (error) {
+    console.log("Error in sign up controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 // log in
