@@ -113,19 +113,33 @@ export const logout = (req, res) => {
 
 //Updating Profile
 export const updateProfile = async (req, res) => {
-    try {
-        const {profilePic} = req.body;
-        const userId = req.user._id
+  try {
+    const { profilePic, school, major } = req.body;
+    const userId = req.user._id;
 
-        if(!profilePic) {
-            return res.status(400).json({message:"Profile Pic Is required"})
-        }
-
-        const uploadResponse = await cloudinary.uploader.upload(profilePic)
-        const updatedUser = await User.findByIdAndUpdate(userId, {profilePic:uploadResponse.secure_url}, {new:true})
-        res.status(200).json(updatedUser)
-    } catch (error) {
-        console.log("error in updated profile:", error)
-        res.status(500).json({message: "Internal Server Error"})
+    if (!profilePic && !school && !major) {
+      return res
+        .status(400)
+        .json({ message: "At least one field Is required to update" });
     }
-}
+    let updatedFields = {};
+    // If profilePic is provided, upload it to Cloudinary
+    if (profilePic) {
+      const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      updatedFields.profilePic = uploadResponse.secure_url;
+    }
+    // If major is provided, update it
+    if (major) {
+      updatedFields.major = major;
+    }
+
+    // Update the user record
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedFields, {
+      new: true,
+    });
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.log("error in update profile:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

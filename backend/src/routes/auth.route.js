@@ -13,6 +13,7 @@ router.post("/login", login);
 // log out
 router.post("/logout", logout);
 
+//log out
 router.put("/update-profile",protectRoute, updateProfile)
 
 
