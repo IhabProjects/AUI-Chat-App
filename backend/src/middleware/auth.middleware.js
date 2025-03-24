@@ -23,5 +23,10 @@ export const protectRoute = async (req, res, next) => {
     }
 
     req.user = user;
-  } catch (error) {}
+
+    next();
+  } catch (error) {
+    console.log("Error in protectedRoute Middleware:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };
