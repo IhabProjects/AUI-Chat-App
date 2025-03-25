@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@plugin "daisyui";
+
+/* Add your custom theme here */
+@plugin "daisyui/theme" {
+  name: "Aui";
+  default: false;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: rgb(246, 252, 223);
+  --color-base-200: rgb(216, 230, 190);
+  --color-base-300: rgb(186, 208, 159);
+  --color-base-content: rgb(26, 26, 25);
+  --color-primary: rgb(49, 81, 30);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: rgb(133, 159, 61);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: rgb(80, 120, 60);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: rgb(26, 26, 25);
+  --color-neutral-content: oklch(100% 0 0);
+  --color-info: rgb(66, 153, 225);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: rgb(76, 175, 80);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: rgb(255, 152, 0);
+  --color-warning-content: oklch(10% 0 0);
+  --color-error: rgb(244, 67, 54);
+  --color-error-content: oklch(100% 0 0);
+  --radius-selector: 2rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 1;
+  --noise: 0;
+}

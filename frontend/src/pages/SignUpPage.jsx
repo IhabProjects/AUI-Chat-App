@@ -1,19 +1,19 @@
 import React from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { MessageSquare, User, Mail, Lock } from "lucide-react";
+import { CircleUser, MessageSquare } from "lucide-react";
 import { useState } from "react";
-
 const SignUpPage = () => {
-    const [showPassword, setShowPassword] = useState(false); // Fixed
-    const [formData, setFormData] = useState({ // Fixed
-      fullName: "",
-      auiId: "",
-      school: "",
-      major: "",
-      role: "Student",
-      email: "",
-      password: "",
-    });
+  const [showPassword, setShowPassword] = useState(false); // Fixed
+  const [formData, setFormData] = useState({
+    // Fixed
+    fullName: "",
+    auiId: "",
+    school: "",
+    major: "",
+    role: "Student",
+    email: "",
+    password: "",
+  });
   const { signup, isSigningUp } = useAuthStore();
 
   const validateForm = () => {};
@@ -22,7 +22,7 @@ const SignUpPage = () => {
   };
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
-      {/* left side form*/}
+      {/* left side */}
       <div className="flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8">
           {/* LOGO */}
@@ -30,7 +30,7 @@ const SignUpPage = () => {
             <div className="flex flex-col items-center gap-2 group">
               <div
                 className="size-12 rounded-xl bg-primary/10 flex items-center justify-center
-                group-hover:bg-primary/20 transition-colors"
+              group-hover:bg-primary/20 transition-colors"
               >
                 <MessageSquare className="size-6 text-primary" />
               </div>
@@ -40,6 +40,7 @@ const SignUpPage = () => {
               </p>
             </div>
           </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="form-control">
               <label className="label">
@@ -47,7 +48,7 @@ const SignUpPage = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="size-5 text-base-content/40" />
+                  <CircleUser className="w-5 h-5 text-neutral-content" />
                 </div>
                 <input
                   type="text"
@@ -56,6 +57,44 @@ const SignUpPage = () => {
                   value={formData.fullName}
                   onChange={(e) =>
                     setFormData({ ...formData, fullName: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">AUI Id</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="size-5 text-base-content/40" />
+                </div>
+                <input
+                  type="text"
+                  className={`input input-bordered w-full pl-10`}
+                  placeholder="123456"
+                  value={formData.auiId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, auiId: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Email</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="size-5 text-base-content/40" />
+                </div>
+                <input
+                  type="email"
+                  className={`input input-bordered w-full pl-10`}
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
                   }
                 />
               </div>
