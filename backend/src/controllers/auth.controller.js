@@ -125,8 +125,8 @@ export const updateProfile = async (req, res) => {
     let updatedFields = {};
     // If profilePic is provided, upload it to Cloudinary
     if (profilePic) {
-      const uploadResponse = await cloudinary.uploader.upload(profilePic);
-      updatedFields.profilePic = uploadResponse.secure_url;
+      const uploadResponse = await cloudinary.uploader.upload(profilePic); //Upload to cloudinary pic
+      updatedFields.profilePic = uploadResponse.secure_url; //link of the pic that will be added to DB
     }
     // If major is provided, update it
     if (major) {
@@ -143,7 +143,7 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
+//Checking Authentification
 export const checkAuth = (req, res) => {
   try {
     res.status(200).json(req.user);
