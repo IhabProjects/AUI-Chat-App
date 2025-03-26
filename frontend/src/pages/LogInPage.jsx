@@ -3,6 +3,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
+import Footbar from "../components/Footbar";
 
 
 const LogInPage = () => {
@@ -31,6 +32,7 @@ const LogInPage = () => {
                 <MessageSquare className="w-6 h-6 text-primary" />
               </div>
               <h1 className="text-2xl font-bold mt-2">Welcome Back</h1>
+              <h2 className="text-xl font-bold">Dear Auier</h2>
               <p className="text-base-content/60">Sign in to your account</p>
             </div>
           </div>
@@ -122,6 +124,7 @@ const LogInPage = () => {
           "Sign in to continue your conversations and catch up with your messages."
         }
       />
+      <Footbar />
     </div>
   );
 };
