@@ -89,9 +89,9 @@ const SignUpPage = () => {
     <div className="min-h-screen grid lg:grid-cols-2 bg-base-200">
       {/* Left side - Form container */}
       <div className="flex flex-col justify-center items-center p-6 sm:p-12 bg-base-100">
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-md space-y-2">
           {/* Logo and header section */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-4">
             <div className="flex flex-col items-center gap-2 group">
               <div
                 className="size-12 rounded-xl bg-primary/10 flex items-center justify-center
