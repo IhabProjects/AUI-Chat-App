@@ -3,6 +3,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { CircleUser, MessageSquare, Mail, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import AuthImagePattern from "../components/AuthImagePattern";
 import {
   SCHOOL_MAJORS,
   findSchoolForMajor,
@@ -71,9 +72,9 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-base-200">
       {/* Left side - Form container */}
-      <div className="flex flex-col justify-center items-center p-6 sm:p-12">
+      <div className="flex flex-col justify-center items-center p-6 sm:p-12 bg-base-100">
         <div className="w-full max-w-md space-y-8">
           {/* Logo and header section */}
           <div className="text-center mb-8">
@@ -84,7 +85,9 @@ const SignUpPage = () => {
               >
                 <MessageSquare className="size-6 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold mt-2">Create Account</h1>
+              <h1 className="text-2xl font-bold mt-2 text-base-content">
+                Create Account
+              </h1>
               <p className="text-base-content/60">
                 Get started with your free account
               </p>
@@ -292,8 +295,12 @@ const SignUpPage = () => {
             </p>
           </div>
         </div>
-        {/* Right side - Reserved for future content */}
       </div>
+      {/* Right side - Reserved for future content */}
+      <AuthImagePattern
+        title="Welcome to AUI's First Social Platform"
+        subtile="Connect with your peers and professors"
+      />
     </div>
   );
 };

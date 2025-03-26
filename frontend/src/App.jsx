@@ -8,9 +8,8 @@ import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import { useAuthStore } from "./store/useAuthStore";
 
-
 // animation loader
-import { Loader } from 'lucide-react';
+import { Loader } from "lucide-react";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -18,20 +17,34 @@ const App = () => {
     checkAuth();
   }, [checkAuth]);
   console.log({ authUser });
-  if (isCheckingAuth & !authUser) return (
-    <div className="flex items-center justify-center h-screen">
-        <Loader className="size-10 animate-spin"/>
-    </div>
-  )
+  if (isCheckingAuth & !authUser)
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="size-10 animate-spin" />
+      </div>
+    );
   return (
-    <div>
+    <div data-theme="lemonade">
       <Navbar />
       <Routes>
-        <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login"/>}/> //if not login and wanna go to home page go to log in
-        <Route path="/signup" element={!authUser ? <SignUpPage />: <Navigate to="/"/>} />
-        <Route path="/login" element={!authUser ? <LogInPage />: <Navigate to="/"/>} />
+        <Route
+          path="/"
+          element={authUser ? <HomePage /> : <Navigate to="/login" />}
+        />{" "}
+        //if not login and wanna go to home page go to log in
+        <Route
+          path="/signup"
+          element={!authUser ? <SignUpPage /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/login"
+          element={!authUser ? <LogInPage /> : <Navigate to="/" />}
+        />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/profile" element={authUser ? <ProfilePage />: <Navigate to="/login"/>} />
+        <Route
+          path="/profile"
+          element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+        />
       </Routes>
     </div>
   );
