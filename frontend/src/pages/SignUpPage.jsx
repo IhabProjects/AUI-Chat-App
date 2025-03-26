@@ -4,6 +4,7 @@ import { CircleUser, MessageSquare, Mail, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import AuthImagePattern from "../components/AuthImagePattern";
+import { toast } from "react-hot-toast";
 import {
   SCHOOL_MAJORS,
   findSchoolForMajor,
@@ -26,26 +27,39 @@ const SignUpPage = () => {
   const { signup, isSigningUp } = useAuthStore();
 
   // Validate form fields
-  const validateForm = () => {
-    // Check if all required fields are filled and valid
-    const isValidEmail = formData.email.includes("@aui.ma"); // Ensure it's an AUI email
-    const isValidPassword = formData.password.length >= 6; // Minimum 6 characters
-    const isValidAuiId = /^\d{6}$/.test(formData.auiId); // Must be 6 digits
+  const validateForm = (showToast = false) => {
+    const errors = [];
+    const isValidEmail = formData.email.includes("@"); //To Change After for AUI Email
+    const isValidPassword = formData.password.length >= 6;
+    const isValidAuiId = /^\d{6}$/.test(formData.auiId);
 
-    return (
-      formData.fullName.trim() !== "" &&
-      isValidAuiId &&
-      formData.school !== "" &&
-      formData.major !== "" &&
-      formData.role !== "" &&
-      isValidEmail &&
-      isValidPassword
-    );
+    if (formData.password.trim() === "") errors.push("Password is required");
+    if (formData.email.trim() === "") errors.push("Email is required");
+    if (formData.auiId.trim() === "") errors.push("AUI ID is required");
+    if (formData.fullName.trim() === "") errors.push("Full name is required");
+    if (!isValidPassword) errors.push("Password must be at least 6 characters");
+    if (!isValidAuiId) errors.push("AUI ID must be 6 digits");
+    if (!isValidEmail) errors.push("Email must be an AUI email");
+    if (formData.school.trim() === "") errors.push("School is required");
+
+    if (showToast && errors.length > 0) {
+      // Show first error
+      toast.error(errors[0]);
+      // If there are more errors, show them after a delay
+      errors.slice(1).forEach((error, index) => {
+        setTimeout(() => {
+          toast.error(error);
+        }, (index + 1) * 1000);
+      });
+    }
+
+    return errors.length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
+    const success = validateForm(true);
+    if (success) {
       signup(formData);
     }
   };
@@ -273,11 +287,11 @@ const SignUpPage = () => {
             <button
               type="submit"
               className="btn btn-primary w-full"
-              disabled={isSigningUp || !validateForm()}
+              disabled={isSigningUp}
             >
               {isSigningUp ? (
                 <>
-                  <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
+                  <Loader2 className="size-5 animate-spin" />
                   Loading ...
                 </>
               ) : (
@@ -299,7 +313,7 @@ const SignUpPage = () => {
       {/* Right side - Reserved for future content */}
       <AuthImagePattern
         title="Welcome to AUI's First Social Platform"
-        subtile="Connect with your peers and professors"
+        subtitle="Connect with your peers and professors"
       />
     </div>
   );
