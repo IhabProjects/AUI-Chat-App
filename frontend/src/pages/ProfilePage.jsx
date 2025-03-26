@@ -24,21 +24,21 @@ const ProfilePage = () => {
     }
   };
   return (
-    <div className="min-h-screen pt-12">
-      <div className="max-w-2xl mx-auto p-4 py-8">
+    <div className="min-h-screen pt-16">
+      <div className="max-w-2xl mx-auto p-4">
         <div className="bg-base-300 rounded-xl p-6 space-y-4">
           <div className="text-center">
             <h1 className="text-2xl font-semibold">Profile</h1>
-            <p className="mt-2">Your profile Information</p>
+            <p className="mt-1">Your profile Information</p>
           </div>
 
           {/* Profile Image */}
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-3">
             <div className="relative">
               <img
                 src={authUser.profilePic || "/avatar_original.png"}
                 alt="Profile"
-                className="size-32 rounded-full object-cover border-4 "
+                className="size-32 rounded-full object-cover border-4"
               />
               <label
                 htmlFor="avatar-upload"
@@ -47,9 +47,7 @@ const ProfilePage = () => {
                   bg-base-content hover:scale-105
                   p-2 rounded-full cursor-pointer
                   transition-all duration-200
-                  ${
-                    isUpdatingProfile ? "animate-pulse pointer-events-none" : ""
-                  }
+                  ${isUpdatingProfile ? "animate-pulse pointer-events-none" : ""}
                 `}
               >
                 <Camera className="w-5 h-5 text-base-200" />
@@ -64,15 +62,13 @@ const ProfilePage = () => {
               </label>
             </div>
             <p className="text-sm text-zinc-400">
-              {isUpdatingProfile
-                ? "Uploading..."
-                : "Click the camera icon to update your photo"}
+              {isUpdatingProfile ? "Uploading..." : "Click the camera icon to update your photo"}
             </p>
           </div>
 
           {/* Profile Information */}
-          <div className="space-y-6">
-            <div className="space-y-1.5">
+          <div className="space-y-4">
+            <div className="space-y-1">
               <div className="text-sm text-zinc-400 flex items-center gap-2">
                 <User className="w-4 h-4" />
                 Full Name
@@ -82,7 +78,7 @@ const ProfilePage = () => {
               </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="text-sm text-zinc-400 flex items-center gap-2">
                 <Mail className="w-4 h-4" />
                 Email Address
@@ -92,7 +88,7 @@ const ProfilePage = () => {
               </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="text-sm text-zinc-400 flex items-center gap-2">
                 <GraduationCap className="w-4 h-4" />
                 AUI ID
@@ -102,7 +98,7 @@ const ProfilePage = () => {
               </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="text-sm text-zinc-400 flex items-center gap-2">
                 <Building className="w-4 h-4" />
                 School
@@ -127,7 +123,7 @@ const ProfilePage = () => {
               </select>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="text-sm text-zinc-400 flex items-center gap-2">
                 <GraduationCap className="w-4 h-4" />
                 Major
@@ -154,15 +150,28 @@ const ProfilePage = () => {
             </div>
 
             <button
-              className={`btn btn-primary w-full ${
-                isUpdatingProfile ? "loading" : ""
-              }`}
+              className={`btn btn-primary w-full ${isUpdatingProfile ? "loading" : ""}`}
               onClick={handleUpdateProfile}
               disabled={isUpdatingProfile}
             >
               <Save className="w-4 h-4" />
               {isUpdatingProfile ? "Updating..." : "Save Changes"}
             </button>
+
+            {/* Account Information Section */}
+            <div className="mt-4 bg-base-200 rounded-xl p-4">
+              <h2 className="text-lg font-medium mb-3">Account Information</h2>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between py-2 border-b border-base-300">
+                  <span>Member Since</span>
+                  <span>{authUser?.createdAt?.split("T")[0]}</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span>Account Status</span>
+                  <span className="text-success">Active</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
