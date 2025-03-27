@@ -34,7 +34,7 @@ const Sidebar = () => {
             onClick={() => setSelectedUser(user)}
             className={`w-full p-3 flex items-center gap-3 hover:bg-base-300 transition-colors ${
               selectedUser?.id === user.id
-                ? "bg-base-100 ring-1 ring-base-300 "
+                ? "bg-base-300 ring-1 ring-base-300"
                 : ""
             }`}
           >
