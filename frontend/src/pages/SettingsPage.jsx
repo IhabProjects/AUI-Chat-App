@@ -20,15 +20,15 @@ const PREVIEW_MESSAGES = [
 const SettingsPage = () => {
   const { theme, setTheme } = useThemeStore();
   return (
-    <div className="h-screen container mx-auto px-4 pt-20 max-w-5xl">
-      <div className="space-y-6">
+    <div className="min-h-screen container mx-auto px-4 py-20 max-w-5xl">
+      <div className="space-y-8">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold">Theme</h2>
           <p className="text-sm text-base-content/70">Choose a theme that matches your AUI experience</p>
         </div>
 
         {Object.entries(THEMES).map(([category, themes]) => (
-          <div key={category} className="space-y-3">
+          <div key={category} className="space-y-2">
             <h3 className="text-sm font-medium text-base-content/60 capitalize">{category}</h3>
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
               {themes.map((t) => (
@@ -82,7 +82,7 @@ const SettingsPage = () => {
                   </div>
 
                   {/* Chat Messages */}
-                  <div className="p-4 space-y-4 min-h-[200px] max-h-[200px] overflow-y-auto bg-base-100">
+                  <div className="p-4 space-y-3 bg-base-100">
                     {PREVIEW_MESSAGES.map((message) => (
                       <div
                         key={message.id}
