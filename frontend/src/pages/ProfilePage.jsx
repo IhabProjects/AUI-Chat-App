@@ -221,7 +221,7 @@ const ProfilePage = () => {
 
             <button
               className={`btn btn-primary w-full ${
-                isUpdatingProfile ? "loading" : ""
+                isUpdatingProfile ? "btn-disabled opacity-75" : ""
               }`}
               onClick={handleUpdateProfile}
               disabled={isUpdatingProfile}
