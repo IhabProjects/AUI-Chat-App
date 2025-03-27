@@ -227,12 +227,12 @@ const UserProfilePage = () => {
   const handleAddFriend = async () => {
     try {
       setIsUpdating(true);
-      await axiosInstance.post(`/auth/friends/add/${userId}`);
+      await axiosInstance.post(`/auth/friends/request/${userId}`);
       setIsFriend(true);
-      toast.success("Friend added successfully");
+      toast.success("Friend request sent successfully");
     } catch (error) {
       console.error("Error adding friend:", error);
-      toast.error("Failed to add friend");
+      toast.error("Failed to send friend request");
     } finally {
       setIsUpdating(false);
     }
@@ -253,19 +253,11 @@ const UserProfilePage = () => {
   };
 
   const handleStartChat = async () => {
-    // Navigate to the home page and select this user for chat
+    // Navigate to the home page with chat selection info
     if (userProfile) {
       try {
-        // First navigate to home page where chat is
-        navigate('/');
-
-        // Use a small delay to ensure navigation completes before selecting user
-        setTimeout(async () => {
-          const success = await selectUserById(userProfile._id);
-          if (!success) {
-            toast.error("Could not start chat with this user");
-          }
-        }, 100);
+        // Navigate to home page and explicitly pass the userId as state
+        navigate('/', { state: { selectedChatUserId: userProfile._id } });
       } catch (error) {
         console.error("Error starting chat:", error);
         toast.error("Failed to start chat");

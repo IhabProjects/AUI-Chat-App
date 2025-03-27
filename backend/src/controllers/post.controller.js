@@ -35,7 +35,9 @@ export const createPost = async (req, res) => {
     await newPost.save();
 
     // Populate author information
-    const populatedPost = await Post.findById(newPost._id).populate("author", "fullName profilePic username auiId");
+    const populatedPost = await Post.findById(newPost._id)
+      .populate("author", "fullName profilePic username auiId role school major")
+      .populate("comments.user", "fullName profilePic username auiId role school major");
 
     // Emit socket event for real-time feed updates
     const io = req.app.get('io');
@@ -73,7 +75,8 @@ export const getFeedPosts = async (req, res) => {
 
     // Get posts from friends and self, sorted by newest first
     const posts = await Post.find({ author: { $in: friendIds } })
-      .populate("author", "fullName profilePic username auiId")
+      .populate("author", "fullName profilePic username auiId role school major")
+      .populate("comments.user", "fullName profilePic username auiId role school major")
       .sort({ createdAt: -1 })
       .limit(20); // Limit to 20 most recent posts
 
@@ -91,7 +94,8 @@ export const getUserPosts = async (req, res) => {
 
     // Get user's posts, sorted by newest first
     const posts = await Post.find({ author: userId })
-      .populate("author", "fullName profilePic username auiId")
+      .populate("author", "fullName profilePic username auiId role school major")
+      .populate("comments.user", "fullName profilePic username auiId role school major")
       .sort({ createdAt: -1 });
 
     res.status(200).json(posts);
@@ -123,7 +127,9 @@ export const likePost = async (req, res) => {
     });
 
     // Get updated post
-    const updatedPost = await Post.findById(postId).populate("author", "fullName profilePic username auiId");
+    const updatedPost = await Post.findById(postId)
+      .populate("author", "fullName profilePic username auiId role school major")
+      .populate("comments.user", "fullName profilePic username auiId role school major");
 
     res.status(200).json(updatedPost);
   } catch (error) {
@@ -154,7 +160,9 @@ export const unlikePost = async (req, res) => {
     });
 
     // Get updated post
-    const updatedPost = await Post.findById(postId).populate("author", "fullName profilePic username auiId");
+    const updatedPost = await Post.findById(postId)
+      .populate("author", "fullName profilePic username auiId role school major")
+      .populate("comments.user", "fullName profilePic username auiId role school major");
 
     res.status(200).json(updatedPost);
   } catch (error) {
@@ -207,8 +215,8 @@ export const addComment = async (req, res) => {
 
     // Get updated post with populated comments
     const updatedPost = await Post.findById(postId)
-      .populate("author", "fullName profilePic username auiId")
-      .populate("comments.user", "fullName profilePic username auiId");
+      .populate("author", "fullName profilePic username auiId role school major")
+      .populate("comments.user", "fullName profilePic username auiId role school major");
 
     // Emit socket event for real-time updates
     const io = req.app.get('io');
@@ -261,6 +269,29 @@ export const deletePost = async (req, res) => {
     res.status(200).json({ message: "Post deleted successfully" });
   } catch (error) {
     console.log("Error in deletePost controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Add searchPosts controller at the end of the file
+export const searchPosts = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    const posts = await Post.find({
+      content: { $regex: query, $options: 'i' }
+    })
+    .populate("author", "fullName profilePic username auiId role school major")
+    .populate("comments.user", "fullName profilePic username auiId role school major")
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.log("Error in searchPosts controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

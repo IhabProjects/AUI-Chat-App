@@ -274,3 +274,28 @@ export const getGroupPosts = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+// Search groups by name or description
+export const searchGroups = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    const groups = await Group.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } }
+      ]
+    })
+    .populate("admin", "username fullName profilePic")
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+    res.status(200).json(groups);
+  } catch (error) {
+    console.log("Error in searchGroups controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

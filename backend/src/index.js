@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
 import postRoutes from "./routes/post.route.js";
 import groupRoutes from "./routes/group.route.js";
+import userRoutes from "./routes/user.route.js";
 
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -48,6 +49,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/users", userRoutes);
 
 server.listen(PORT, () => {
   console.log("server is running on port:" + PORT);

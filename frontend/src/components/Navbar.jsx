@@ -260,44 +260,81 @@ function Navbar() {
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            {authUser && (
+          <nav className="flex items-center gap-3">
+            {authUser ? (
               <>
-                <Link to={"/"} className={`btn btn-sm gap-2`}>
-                  <Newspaper className="w-4 h-4" />
-                  <span className="hidden sm:inline">Feed</span>
-                </Link>
-                <Link to={"/chat"} className={`btn btn-sm gap-2`}>
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="hidden sm:inline">Chat</span>
-                </Link>
-                <Link to={"/groups"} className={`btn btn-sm gap-2`}>
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">Groups</span>
-                </Link>
-              </>
-            )}
-            <Link
-              to={"/settings"}
-              className={`btn btn-sm gap-2 transition-colors`}
-            >
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Settings</span>
-            </Link>
-            {authUser && (
-              <>
-                <Link to={"/profile"} className={`btn btn-sm gap-2`}>
-                  <User className="size-5" />
-                  <span className="hidden sm:inline">Profile</span>
+                <Link
+                  to="/"
+                  className="btn btn-sm btn-ghost gap-2"
+                  title="Feed"
+                >
+                  <Newspaper className="w-[18px] h-[18px]" />
+                  <span className="hidden md:inline">Feed</span>
                 </Link>
 
-                <button className="flex gap-2 items-center" onClick={logout}>
-                  <LogOut className="size-5" />
-                  <span className="hidden sm:inline">Logout</span>
+                <Link
+                  to="/chat"
+                  className="btn btn-sm btn-ghost gap-2"
+                  title="Chat"
+                >
+                  <MessageSquare className="w-[18px] h-[18px]" />
+                  <span className="hidden md:inline">Chat</span>
+                </Link>
+
+                <Link
+                  to="/groups"
+                  className="btn btn-sm btn-ghost gap-2"
+                  title="Groups"
+                >
+                  <Users className="w-[18px] h-[18px]" />
+                  <span className="hidden md:inline">Groups</span>
+                </Link>
+
+                <Link
+                  to="/search"
+                  className="btn btn-sm btn-ghost gap-2"
+                  title="Search Users"
+                >
+                  <Search className="w-[18px] h-[18px]" />
+                  <span className="hidden md:inline">Search</span>
+                </Link>
+
+                <Link
+                  to="/settings"
+                  className="btn btn-sm btn-ghost gap-2"
+                  title="Settings"
+                >
+                  <Settings className="w-[18px] h-[18px]" />
+                  <span className="hidden md:inline">Settings</span>
+                </Link>
+
+                <Link
+                  to="/profile"
+                  className="btn btn-sm btn-ghost gap-2"
+                  title="Profile"
+                >
+                  <User className="w-[18px] h-[18px]" />
+                  <span className="hidden md:inline">Profile</span>
+                </Link>
+
+                <button
+                  onClick={logout}
+                  className="btn btn-sm btn-ghost gap-2"
+                  title="Logout"
+                >
+                  <LogOut className="w-[18px] h-[18px]" />
+                  <span className="hidden md:inline">Logout</span>
                 </button>
               </>
+            ) : (
+              <Link
+                to="/login"
+                className="btn btn-sm btn-primary"
+              >
+                Login
+              </Link>
             )}
-          </div>
+          </nav>
         </div>
       </div>
     </header>

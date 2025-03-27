@@ -100,21 +100,36 @@ const CommentSection = ({ post, onCommentAdded }) => {
                   <div className="avatar self-start">
                     <div className="w-8 h-8 rounded-full">
                       <img
-                        src={comment.user.profilePic || "/avatar.png"}
-                        alt={comment.user.username || "User"}
+                        src={comment.user?.profilePic || "/avatar.png"}
+                        alt={comment.user?.username || "User"}
                       />
                     </div>
                   </div>
                   <div className="flex-1 bg-base-200 p-2 rounded-lg">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-medium text-sm">
-                        {comment.user.fullName || comment.user.username}
-                      </span>
+                      <div>
+                        <span className="font-medium text-sm">
+                          {comment.user?.fullName || comment.user?.username || "User"}
+                        </span>
+                        {comment.user?.role && (
+                          <span className="ml-2 badge badge-xs badge-primary">{comment.user.role}</span>
+                        )}
+                        {comment.user?.auiId && (
+                          <span className="text-xs text-base-content/70 block">
+                            {comment.user.auiId}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs text-base-content/60">
                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                       </span>
                     </div>
                     <p className="text-sm whitespace-pre-line">{comment.text}</p>
+                    <div className="flex justify-between mt-1 text-xs text-base-content/60">
+                      {comment.user?.school && comment.user?.major && (
+                        <span>{comment.user.school} - {comment.user.major}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -188,6 +203,15 @@ const FeedPage = () => {
     fetchPosts();
   }, [sortBy, filterType]);
 
+  // Add an effect to refresh the feed when friends list changes
+  useEffect(() => {
+    // Only refetch if authUser is properly loaded and we're not already loading
+    if (authUser && !loading) {
+      console.log("Friends list changed, refreshing feed...");
+      fetchPosts();
+    }
+  }, [authUser?.friends?.length]);
+
   // Setup socket listeners for real-time updates
   useEffect(() => {
     if (!socket) return;
@@ -247,11 +271,19 @@ const FeedPage = () => {
       setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
     });
 
+    // Listen for friend list changes
+    socket.on('friend:list:changed', () => {
+      console.log("Friend list changed event received in FeedPage - refreshing feed");
+      // Immediately refetch posts to update based on new friend status
+      fetchPosts();
+    });
+
     return () => {
       socket.off('new_post');
       socket.off('post_updated');
       socket.off('post_deleted');
       socket.off('post:comment');
+      socket.off('friend:list:changed');
     };
   }, [socket, filterType, sortBy, authUser._id]);
 
@@ -280,51 +312,65 @@ const FeedPage = () => {
 
   // Sort posts based on the selected sort type
   const sortPosts = useCallback((postsToSort, sort) => {
-    if (!Array.isArray(postsToSort)) return [];
+    if (!Array.isArray(postsToSort) || postsToSort.length === 0) return [];
 
-    if (sort === 'latest') {
-      return [...postsToSort].sort((a, b) =>
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
+    try {
+      if (sort === 'latest') {
+        return [...postsToSort].sort((a, b) =>
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+      }
+      else if (sort === 'popular') {
+        return [...postsToSort].sort((a, b) =>
+          (b.likes?.length || 0) - (a.likes?.length || 0)
+        );
+      }
+      else if (sort === 'algorithm') {
+        // Advanced algorithm that combines recency, popularity, and relevance
+        return [...postsToSort].sort((a, b) => {
+          // Base score from likes (popularity)
+          const aLikes = a.likes?.length || 0;
+          const bLikes = b.likes?.length || 0;
+
+          // Recency factor (exponential decay)
+          const now = new Date();
+          const aDate = new Date(a.createdAt || now);
+          const bDate = new Date(b.createdAt || now);
+          const aAge = (now - aDate) / (1000 * 60 * 60); // hours
+          const bAge = (now - bDate) / (1000 * 60 * 60); // hours
+          const aRecency = Math.exp(-aAge / 24); // decay rate = 1 day half-life
+          const bRecency = Math.exp(-bAge / 24);
+
+          // Friend bonus (content from friends)
+          // Ensure friends is an array before trying to use includes
+          const friendsArray = Array.isArray(authUser?.friends) ? authUser.friends : [];
+
+          const aFriendBonus = a.author && a.author._id &&
+            friendsArray.includes(a.author._id) ? 1.5 : 1;
+
+          const bFriendBonus = b.author && b.author._id &&
+            friendsArray.includes(b.author._id) ? 1.5 : 1;
+
+          // Interaction bonus (user has liked this content)
+          const aInteracted = Array.isArray(a.likes) && authUser?._id &&
+            a.likes.includes(authUser._id) ? 1.2 : 1;
+
+          const bInteracted = Array.isArray(b.likes) && authUser?._id &&
+            b.likes.includes(authUser._id) ? 1.2 : 1;
+
+          // Final score calculation
+          const aScore = (aLikes + 1) * aRecency * aFriendBonus * aInteracted;
+          const bScore = (bLikes + 1) * bRecency * bFriendBonus * bInteracted;
+
+          return bScore - aScore;
+        });
+      }
+      return [...postsToSort]; // fallback - return a copy to avoid mutation issues
+    } catch (error) {
+      console.error("Error sorting posts:", error);
+      // If sorting fails, return posts in their original order
+      return [...postsToSort];
     }
-    else if (sort === 'popular') {
-      return [...postsToSort].sort((a, b) =>
-        (b.likes?.length || 0) - (a.likes?.length || 0)
-      );
-    }
-    else if (sort === 'algorithm') {
-      // Advanced algorithm that combines recency, popularity, and relevance
-      return [...postsToSort].sort((a, b) => {
-        // Base score from likes (popularity)
-        const aLikes = a.likes?.length || 0;
-        const bLikes = b.likes?.length || 0;
-
-        // Recency factor (exponential decay)
-        const now = new Date();
-        const aDate = new Date(a.createdAt);
-        const bDate = new Date(b.createdAt);
-        const aAge = (now - aDate) / (1000 * 60 * 60); // hours
-        const bAge = (now - bDate) / (1000 * 60 * 60); // hours
-        const aRecency = Math.exp(-aAge / 24); // decay rate = 1 day half-life
-        const bRecency = Math.exp(-bAge / 24);
-
-        // Friend bonus (content from friends)
-        const aFriendBonus = a.author && authUser.friends.includes(a.author._id) ? 1.5 : 1;
-        const bFriendBonus = b.author && authUser.friends.includes(b.author._id) ? 1.5 : 1;
-
-        // Interaction bonus (user has liked this content)
-        const aInteracted = a.likes?.includes(authUser._id) ? 1.2 : 1;
-        const bInteracted = b.likes?.includes(authUser._id) ? 1.2 : 1;
-
-        // Final score calculation
-        const aScore = (aLikes + 1) * aRecency * aFriendBonus * aInteracted;
-        const bScore = (bLikes + 1) * bRecency * bFriendBonus * bInteracted;
-
-        return bScore - aScore;
-      });
-    }
-
-    return postsToSort; // fallback
   }, [authUser]);
 
   const fetchPosts = async () => {
@@ -332,9 +378,30 @@ const FeedPage = () => {
       setLoading(true);
       console.log("🔍 Fetching posts from:", axiosInstance.defaults.baseURL + '/posts/feed');
 
+      // Add loading timeout to prevent infinite loading
+      const loadingTimeout = setTimeout(() => {
+        setLoading(false);
+        console.log("Loading timeout reached - preventing infinite loading");
+        // When timeout is reached, set empty posts array to show "no posts" message
+        setPosts([]);
+      }, 10000); // 10 seconds timeout
+
       // Add filter and sort parameters
       const params = {};
-      if (filterType === 'friends') params.filter = 'friends';
+
+      // Only filter by friends if user has friends
+      if (filterType === 'friends') {
+        if (Array.isArray(authUser?.friends) && authUser.friends.length > 0) {
+          params.filter = 'friends';
+        } else {
+          // If user has no friends but the filter is 'friends', show message immediately
+          clearTimeout(loadingTimeout);
+          setLoading(false);
+          setPosts([]);
+          return;
+        }
+      }
+
       if (filterType === 'groups') params.filter = 'groups';
       params.sort = sortBy;
 
@@ -343,7 +410,16 @@ const FeedPage = () => {
       const res = await axiosInstance.get('/posts/feed', { params });
       console.log("✅ Posts response:", res.data);
 
-      setPosts(sortPosts(res.data, sortBy));
+      // Clear the timeout since we got a response
+      clearTimeout(loadingTimeout);
+
+      // Handle empty response
+      if (!res.data || !Array.isArray(res.data)) {
+        console.log("No posts returned or invalid response format");
+        setPosts([]);
+      } else {
+        setPosts(sortPosts(res.data, sortBy));
+      }
     } catch (error) {
       console.error("❌ Error fetching posts:", error);
       console.error("❌ Error details:", error.response?.data || error.message);
@@ -753,8 +829,22 @@ const FeedPage = () => {
           <span className="loading loading-spinner loading-lg"></span>
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center my-8">
-          <p className="text-xl">No posts yet. Start by adding friends or creating a post!</p>
+        <div className="text-center my-8 bg-base-200 p-6 rounded-xl">
+          <p className="text-xl mb-4">No posts to show right now</p>
+
+          {filterType === 'friends' && (!Array.isArray(authUser?.friends) || authUser?.friends.length === 0) ? (
+            <div>
+              <p className="mb-3">You don't have any friends yet. Start by adding some!</p>
+              <button
+                onClick={() => setShowingSearch(true)}
+                className="btn btn-primary"
+              >
+                <Users size={16} className="mr-2" /> Find Friends
+              </button>
+            </div>
+          ) : (
+            <p>Start by creating a post or adding more friends</p>
+          )}
         </div>
       ) : (
         <div className="space-y-6">

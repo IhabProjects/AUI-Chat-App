@@ -164,7 +164,7 @@ const CommentSection = ({ post, onCommentAdded }) => {
 };
 
 const ProfilePage = () => {
-  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
+  const { authUser, isUpdatingProfile, updateProfile, socket } = useAuthStore();
   const [selectedImage, setSelectedImage] = useState(null);
   const [editableFields, setEditableFields] = useState({
     school: "",
@@ -201,13 +201,41 @@ const ProfilePage = () => {
     if (activeTab === 'posts' && authUser?._id) {
       fetchUserPosts();
     }
+  }, [activeTab, authUser?._id]);
 
-    // Fetch friend requests and friends when on the friends tab
+  // Fetch friend requests and friends when switched to friends tab
+  useEffect(() => {
     if (activeTab === 'friends' && authUser?._id) {
       fetchFriendRequests();
       fetchFriends();
     }
   }, [activeTab, authUser?._id]);
+
+  // Listen for friend request socket events
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleFriendRequestReceived = (data) => {
+      console.log("Friend request received event:", data);
+      fetchFriendRequests(); // Refresh friend requests
+    };
+
+    const handleFriendRequestAccepted = (data) => {
+      console.log("Friend request accepted event:", data);
+      fetchFriendRequests(); // Refresh friend requests
+      fetchFriends(); // Refresh friends list
+    };
+
+    socket.on("friend:request:received", handleFriendRequestReceived);
+    socket.on("friend:request:accepted", handleFriendRequestAccepted);
+    socket.on("friend:list:changed", fetchFriends);
+
+    return () => {
+      socket.off("friend:request:received", handleFriendRequestReceived);
+      socket.off("friend:request:accepted", handleFriendRequestAccepted);
+      socket.off("friend:list:changed", fetchFriends);
+    };
+  }, [socket]);
 
   const fetchUserPosts = async () => {
     try {
@@ -232,6 +260,7 @@ const ProfilePage = () => {
     try {
       setLoadingFriends(true);
       const res = await axiosInstance.get('/auth/friends/requests');
+      console.log("Friend requests data:", res.data);
       setFriendRequests(res.data);
     } catch (error) {
       console.error("Error fetching friend requests:", error);
@@ -694,39 +723,45 @@ const ProfilePage = () => {
                 {/* Friend Requests */}
                 {friendRequests.received && friendRequests.received.length > 0 && (
                   <div className="space-y-4">
-                    <h4 className="text-lg font-medium">Friend Requests</h4>
+                    <h4 className="text-lg font-medium">Friend Requests ({friendRequests.received.length})</h4>
                     <div className="bg-base-200 rounded-lg divide-y divide-base-300">
-                      {friendRequests.received.map(request => (
-                        <div key={request._id} className="p-4 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="avatar mr-3">
-                              <div className="w-10 rounded-full">
-                                <img
-                                  src={request.profilePic || "/avatar.png"}
-                                  alt={request.fullName}
-                                />
+                      {friendRequests.received.map(request => {
+                        console.log("Rendering friend request:", request);
+                        return (
+                          <div key={request._id} className="p-4 flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="avatar mr-3">
+                                <div className="w-10 rounded-full">
+                                  <img
+                                    src={request.profilePic || "/avatar.png"}
+                                    alt={request.fullName || "User"}
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <span className="font-medium">{request.fullName || request.username}</span>
+                                {request.auiId && (
+                                  <span className="block text-xs text-base-content/70">{request.auiId}</span>
+                                )}
                               </div>
                             </div>
-                            <div>
-                              <span className="font-medium">{request.fullName}</span>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleAcceptFriendRequest(request._id)}
+                                className="btn btn-sm btn-primary"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleRejectFriendRequest(request._id)}
+                                className="btn btn-sm btn-outline"
+                              >
+                                Reject
+                              </button>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleAcceptFriendRequest(request._id)}
-                              className="btn btn-sm btn-primary"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={() => handleRejectFriendRequest(request._id)}
-                              className="btn btn-sm btn-outline"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

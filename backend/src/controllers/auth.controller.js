@@ -251,56 +251,95 @@ export const acceptFriendRequest = async (req, res) => {
     const { friendId } = req.params;
     const userId = req.user._id;
 
-    // Check if user exists
+    // Check if the request exists
+    const user = await User.findById(userId);
     const friend = await User.findById(friendId);
-    if (!friend) {
-      return res.status(404).json({ message: "User not found" });
+
+    if (!user || !friend) {
+      return res.status(404).json({ message: "User or friend not found" });
     }
 
-    // Check if request exists
-    const user = await User.findById(userId);
+    // Check if the request is in the received list
     if (!user.friendRequests.received.includes(friendId)) {
       return res.status(400).json({ message: "No friend request from this user" });
     }
 
-    // Add friend to user's friends list
-    await User.findByIdAndUpdate(userId, {
-      $push: { friends: friendId },
-      $pull: { "friendRequests.received": friendId }
-    });
+    // Check if they're already friends to prevent duplicates
+    if (user.friends.includes(friendId)) {
+      // If already friends, just remove from requests
+      await User.findByIdAndUpdate(
+        userId,
+        { $pull: { "friendRequests.received": friendId } },
+        { new: true }
+      );
 
-    // Add user to friend's friends list
-    await User.findByIdAndUpdate(friendId, {
-      $push: { friends: userId },
-      $pull: { "friendRequests.sent": userId }
-    });
+      await User.findByIdAndUpdate(
+        friendId,
+        { $pull: { "friendRequests.sent": userId } },
+        { new: true }
+      );
 
-    // Emit socket event
-    const io = req.app.get('io');
-    if (io) {
-      // Notify both users
-      io.to(userId.toString()).emit("friend:accepted", {
-        userId: friendId,
-        user: {
-          _id: friend._id,
-          fullName: friend.fullName,
-          profilePic: friend.profilePic
-        }
-      });
-
-      io.to(friendId.toString()).emit("friend:accepted", {
-        userId: userId,
-        user: {
-          _id: user._id,
-          fullName: user.fullName,
-          profilePic: user.profilePic
-        }
+      return res.status(200).json({
+        message: "Already friends. Request cleared.",
+        alreadyFriends: true
       });
     }
 
-    res.status(200).json({ message: "Friend request accepted successfully" });
+    // Accept the request (add to friends list and remove from requests)
+    const userUpdateResult = await User.findByIdAndUpdate(
+      userId,
+      {
+        $push: { friends: friendId },
+        $pull: { "friendRequests.received": friendId }
+      },
+      { new: true }
+    ).select("username fullName friends friendRequests.received profilePic");
+
+    const friendUpdateResult = await User.findByIdAndUpdate(
+      friendId,
+      {
+        $push: { friends: userId },
+        $pull: { "friendRequests.sent": userId }
+      },
+      { new: true }
+    ).select("username fullName friends friendRequests.sent profilePic");
+
+    // Emit socket events to update UI in real-time
+    const io = req.app.get('io');
+    if (io) {
+      // Notify the user who accepted the request
+      io.to(userId.toString()).emit("friend:request:accepted", {
+        friend: friendUpdateResult,
+        action: "accepted"
+      });
+
+      // Notify the user whose request was accepted
+      io.to(friendId.toString()).emit("friend:request:accepted", {
+        friend: userUpdateResult,
+        action: "accepted"
+      });
+
+      // Broadcast friend list changed event to both users to trigger feed refresh
+      io.to(userId.toString()).emit("friend:list:changed");
+      io.to(friendId.toString()).emit("friend:list:changed");
+
+      // Broadcast online status update to ensure both users see each other's status
+      const onlineUsers = Array.from(io.sockets.adapter.rooms.keys());
+      if (onlineUsers.includes(userId.toString())) {
+        io.to(friendId.toString()).emit("user:online", [userId.toString()]);
+      }
+      if (onlineUsers.includes(friendId.toString())) {
+        io.to(userId.toString()).emit("user:online", [friendId.toString()]);
+      }
+    }
+
+    res.status(200).json({
+      message: "Friend request accepted",
+      user: userUpdateResult,
+      friend: friendUpdateResult
+    });
   } catch (error) {
-    console.log("Error in acceptFriendRequest controller", error.message);
+    console.log("Error in acceptFriendRequest controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

@@ -14,6 +14,7 @@ export const useAuthStore = create((set, get) => ({
   onlineUsers: [],
   isCheckingAuth: true,
   socket: null,
+  firstTimeUser: false,
 
   checkAuth: async () => {
     try {
@@ -32,7 +33,7 @@ export const useAuthStore = create((set, get) => ({
     set({ isSigningUp: true });
     try {
       const res = await axiosInstance.post("/auth/signup", data);
-      set({ authUser: res.data });
+      set({ authUser: res.data, firstTimeUser: true });
       toast.success("Account created successfully");
       get().connectSocket();
     } catch (error) {
@@ -49,7 +50,7 @@ export const useAuthStore = create((set, get) => ({
     set({ isLoggingIn: true });
     try {
       const res = await axiosInstance.post("/auth/login", data);
-      set({ authUser: res.data });
+      set({ authUser: res.data, firstTimeUser: false });
       toast.success("Logged in successfully");
 
       get().connectSocket();
@@ -66,7 +67,7 @@ export const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
-      set({ authUser: null });
+      set({ authUser: null, firstTimeUser: false });
       toast.success("Logged out successfully");
       get().disconnectSocket();
     } catch (error) {
@@ -160,6 +161,83 @@ export const useAuthStore = create((set, get) => ({
           }));
         });
 
+        // Friend request events
+        socket.on("friend:request:received", (data) => {
+          console.log("Friend request received:", data);
+          set((state) => {
+            // Only update if we have an authUser
+            if (!state.authUser) return state;
+
+            // Update friendRequests.received array
+            const updatedAuthUser = {
+              ...state.authUser,
+              friendRequests: {
+                ...state.authUser.friendRequests,
+                received: [...(state.authUser.friendRequests?.received || []), data.from]
+              }
+            };
+
+            toast.success(`New friend request from ${data.user.fullName || data.user.username}!`);
+
+            return {
+              ...state,
+              authUser: updatedAuthUser
+            };
+          });
+        });
+
+        socket.on("friend:request:accepted", (data) => {
+          console.log("Friend request accepted:", data);
+          set((state) => {
+            // Only update if we have an authUser
+            if (!state.authUser) return state;
+
+            // Make sure the friends array exists
+            const currentFriends = Array.isArray(state.authUser.friends)
+              ? state.authUser.friends
+              : [];
+
+            // Check if the friend is already in the list to prevent duplicates
+            const friendId = data.friend._id;
+            const friendAlreadyAdded = currentFriends.includes(friendId);
+
+            // Add to friends list and remove from requests
+            const updatedAuthUser = {
+              ...state.authUser,
+              friends: friendAlreadyAdded
+                ? currentFriends
+                : [...currentFriends, friendId],
+              friendRequests: {
+                received: (state.authUser.friendRequests?.received || [])
+                  .filter(id => id !== friendId),
+                sent: (state.authUser.friendRequests?.sent || [])
+                  .filter(id => id !== friendId)
+              }
+            };
+
+            // Show a toast notification
+            toast.success(`You are now friends with ${data.friend.fullName || data.friend.username}!`);
+
+            // Force emit an event to refresh the feed
+            if (socket) {
+              console.log("Emitting friend list changed event");
+              socket.emit("friend:list:changed");
+            }
+
+            return {
+              ...state,
+              authUser: updatedAuthUser
+            };
+          });
+        });
+
+        // Listen for friend list changes that should trigger feed refresh
+        socket.on("friend:list:changed", () => {
+          console.log("Friend list changed event received");
+          // This event will be used by components that need to refresh when friends list changes
+          // We don't need to update any state here - components will listen for this event
+        });
+
         // Save socket in state
         set({ socket });
       } catch (err) {
@@ -174,5 +252,8 @@ export const useAuthStore = create((set, get) => ({
       socket.disconnect();
       set({ socket: null, onlineUsers: [] });
     }
+  },
+  clearFirstTimeStatus: () => {
+    set({ firstTimeUser: false });
   },
 }));

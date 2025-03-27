@@ -1,7 +1,7 @@
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import NoChatSelected from "../components/NoChatSelected";
@@ -10,39 +10,41 @@ import { Users, Newspaper, UserPlus } from "lucide-react";
 
 const HomePage = () => {
   const { selectedUser, getUsers } = useChatStore();
-  const { authUser } = useAuthStore();
+  const { authUser, firstTimeUser, clearFirstTimeStatus } = useAuthStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   // Determine if we're on the explicit chat route
   const isOnChatRoute = location.pathname === "/chat";
 
-  // Don't redirect if explicitly on the chat route
-  const hasFriends = authUser?.friends?.length > 0;
-  const isMessageAttempt = Boolean(selectedUser);
-
+  // Initialize chat data when component mounts
   useEffect(() => {
-    // Always fetch users when on chat page
-    if (isOnChatRoute) {
-      const initChat = async () => {
-        setLoading(true);
-        try {
-          await getUsers();
-        } catch (error) {
-          console.error("Failed to load chat users:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
+    const initChat = async () => {
+      setLoading(true);
+      try {
+        await getUsers();
+      } catch (error) {
+        console.error("Failed to load chat users:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      initChat();
-    }
-  }, [isOnChatRoute, getUsers]);
+    initChat();
+  }, [getUsers]);
 
-  // If user has no friends and is not trying to message, show onboarding
-  if (!hasFriends && !isMessageAttempt && !isOnChatRoute) {
+  // Handle first-time user navigation after dismissing welcome screen
+  const handleGetStarted = () => {
+    clearFirstTimeStatus();
+    // Redirect to profile so user can complete their profile
+    navigate('/profile');
+  };
+
+  // If this is a first-time user, show the welcome screen
+  if (firstTimeUser) {
     return (
-      <div className="min-h-screen bg-base-200 flex items-start justify-center">
+      <div className="min-h-screen bg-base-200 flex items-start justify-center pt-8">
         <div className="max-w-4xl w-full bg-base-100 rounded-lg shadow-lg p-8 m-4">
           <h1 className="text-3xl font-bold mb-6 text-center">Welcome to AUI Connect!</h1>
 
@@ -56,7 +58,7 @@ const HomePage = () => {
               <UserPlus className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h3 className="text-xl font-semibold mb-2">Find Friends</h3>
               <p className="mb-4">Search for classmates and connect with them</p>
-              <Link to="/profile" className="btn btn-primary btn-sm">Search Users</Link>
+              <Link to="/search" className="btn btn-primary btn-sm">Search Users</Link>
             </div>
 
             <div className="bg-base-200 p-6 rounded-lg text-center">
@@ -82,6 +84,12 @@ const HomePage = () => {
               <li>Create your first post on the feed</li>
               <li>Join or create groups based on your interests</li>
             </ol>
+          </div>
+
+          <div className="mt-6 text-center">
+            <button onClick={handleGetStarted} className="btn btn-primary">
+              Get Started
+            </button>
           </div>
         </div>
       </div>

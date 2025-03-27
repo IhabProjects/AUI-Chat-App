@@ -8,7 +8,8 @@ import {
   approveJoinRequest,
   leaveGroup,
   createGroupPost,
-  getGroupPosts
+  getGroupPosts,
+  searchGroups
 } from "../controllers/group.controller.js";
 
 const router = express.Router();
@@ -16,6 +17,8 @@ const router = express.Router();
 // Group management
 router.post("/", protectRoute, createGroup);
 router.get("/", protectRoute, getGroups);
+// Group search - need to be above dynamic routes
+router.get("/search", protectRoute, searchGroups);
 router.get("/:groupId", protectRoute, getGroupById);
 router.post("/:groupId/join", protectRoute, joinGroup);
 router.post("/:groupId/leave", protectRoute, leaveGroup);
