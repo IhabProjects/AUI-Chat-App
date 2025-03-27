@@ -14,6 +14,7 @@ export const useAuthStore = create((set, get) => ({
   onlineUsers: [],
   isCheckingAuth: true,
   socket: null,
+  firstTimeUser: false,
 
   checkAuth: async () => {
     try {
@@ -32,7 +33,7 @@ export const useAuthStore = create((set, get) => ({
     set({ isSigningUp: true });
     try {
       const res = await axiosInstance.post("/auth/signup", data);
-      set({ authUser: res.data });
+      set({ authUser: res.data, firstTimeUser: true });
       toast.success("Account created successfully");
       get().connectSocket();
     } catch (error) {
@@ -49,7 +50,7 @@ export const useAuthStore = create((set, get) => ({
     set({ isLoggingIn: true });
     try {
       const res = await axiosInstance.post("/auth/login", data);
-      set({ authUser: res.data });
+      set({ authUser: res.data, firstTimeUser: false });
       toast.success("Logged in successfully");
 
       get().connectSocket();
@@ -66,7 +67,7 @@ export const useAuthStore = create((set, get) => ({
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
-      set({ authUser: null });
+      set({ authUser: null, firstTimeUser: false });
       toast.success("Logged out successfully");
       get().disconnectSocket();
     } catch (error) {
@@ -92,32 +93,158 @@ export const useAuthStore = create((set, get) => ({
   },
   connectSocket: () => {
     const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    if (!authUser) return;
 
-    const socket = io(BASE_URL, {
-      withCredentials: true
-    });
+    // Get existing socket or create new one
+    let socket = get().socket;
 
-    socket.on("connect", () => {
-      console.log("Connected to socket server");
-      // Let the server know this user is online
-      socket.emit("user:online", { userId: authUser._id });
-    });
+    // If socket exists but is not connected, try to reconnect
+    if (socket && !socket.connected) {
+      console.log("Reconnecting existing socket...");
+      socket.connect();
+    }
 
-    socket.on("user:online", (data) => {
-      set((state) => ({
-        onlineUsers: [...new Set([...state.onlineUsers, ...data])]
-      }));
-    });
+    // Only create a new socket if one doesn't exist
+    if (!socket) {
+      // Use the backend URL directly instead of relative path
+      const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+      console.log("Creating new socket connection via:", BACKEND_URL);
 
-    socket.on("user:offline", (userId) => {
-      set((state) => ({
-        onlineUsers: state.onlineUsers.filter(id => id !== userId)
-      }));
-    });
+      try {
+        socket = io(BACKEND_URL, {
+          withCredentials: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          timeout: 10000,
+          transports: ['websocket'], // Force WebSocket transport only
+          upgrade: false // Disable transport upgrade
+        });
 
-    // Save socket in state
-    set({ socket });
+        // Set up event handlers
+        socket.on("connect", () => {
+          console.log("Connected to socket server");
+          // Let the server know this user is online
+          socket.emit("user:online", { userId: authUser._id });
+
+          // Initialize chat listeners after socket is connected
+          // Using dynamic import to avoid circular dependencies
+          import('./useChatStore.js').then(module => {
+            const useChatStore = module.useChatStore;
+            useChatStore.getState().setupSocketListeners();
+          });
+        });
+
+        socket.on("connect_error", (error) => {
+          console.error("Socket connection error:", error.message);
+          toast.error("Connection error: " + error.message);
+        });
+
+        socket.on("connect_timeout", () => {
+          console.error("Socket connection timeout");
+          toast.error("Connection timed out");
+        });
+
+        socket.on("error", (error) => {
+          console.error("Socket error:", error);
+          toast.error("Socket error: " + error.message);
+        });
+
+        socket.on("user:online", (data) => {
+          set((state) => ({
+            onlineUsers: [...new Set([...state.onlineUsers, ...data])]
+          }));
+        });
+
+        socket.on("user:offline", (userId) => {
+          set((state) => ({
+            onlineUsers: state.onlineUsers.filter(id => id !== userId)
+          }));
+        });
+
+        // Friend request events
+        socket.on("friend:request:received", (data) => {
+          console.log("Friend request received:", data);
+          set((state) => {
+            // Only update if we have an authUser
+            if (!state.authUser) return state;
+
+            // Update friendRequests.received array
+            const updatedAuthUser = {
+              ...state.authUser,
+              friendRequests: {
+                ...state.authUser.friendRequests,
+                received: [...(state.authUser.friendRequests?.received || []), data.from]
+              }
+            };
+
+            toast.success(`New friend request from ${data.user.fullName || data.user.username}!`);
+
+            return {
+              ...state,
+              authUser: updatedAuthUser
+            };
+          });
+        });
+
+        socket.on("friend:request:accepted", (data) => {
+          console.log("Friend request accepted:", data);
+          set((state) => {
+            // Only update if we have an authUser
+            if (!state.authUser) return state;
+
+            // Make sure the friends array exists
+            const currentFriends = Array.isArray(state.authUser.friends)
+              ? state.authUser.friends
+              : [];
+
+            // Check if the friend is already in the list to prevent duplicates
+            const friendId = data.friend._id;
+            const friendAlreadyAdded = currentFriends.includes(friendId);
+
+            // Add to friends list and remove from requests
+            const updatedAuthUser = {
+              ...state.authUser,
+              friends: friendAlreadyAdded
+                ? currentFriends
+                : [...currentFriends, friendId],
+              friendRequests: {
+                received: (state.authUser.friendRequests?.received || [])
+                  .filter(id => id !== friendId),
+                sent: (state.authUser.friendRequests?.sent || [])
+                  .filter(id => id !== friendId)
+              }
+            };
+
+            // Show a toast notification
+            toast.success(`You are now friends with ${data.friend.fullName || data.friend.username}!`);
+
+            // Force emit an event to refresh the feed
+            if (socket) {
+              console.log("Emitting friend list changed event");
+              socket.emit("friend:list:changed");
+            }
+
+            return {
+              ...state,
+              authUser: updatedAuthUser
+            };
+          });
+        });
+
+        // Listen for friend list changes that should trigger feed refresh
+        socket.on("friend:list:changed", () => {
+          console.log("Friend list changed event received");
+          // This event will be used by components that need to refresh when friends list changes
+          // We don't need to update any state here - components will listen for this event
+        });
+
+        // Save socket in state
+        set({ socket });
+      } catch (err) {
+        console.error("Failed to initialize socket:", err);
+        toast.error("Failed to connect: " + err.message);
+      }
+    }
   },
   disconnectSocket: () => {
     const { socket } = get();
@@ -125,5 +252,8 @@ export const useAuthStore = create((set, get) => ({
       socket.disconnect();
       set({ socket: null, onlineUsers: [] });
     }
+  },
+  clearFirstTimeStatus: () => {
+    set({ firstTimeUser: false });
   },
 }));

@@ -1,6 +1,8 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
+import { io } from "../lib/socket.js";
+import { moderateContent } from "../lib/utils.js";
 // Get all Users a part from logged in user to see on the side bar
 
 //TODO Show only friends
@@ -28,7 +30,8 @@ export const getMessages = async (req, res) => {
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    });
+    }).sort({ createdAt: 1 }); // Sort by createdAt to show oldest messages first
+
     res.status(200).json({ messages });
   } catch (error) {
     console.log("Error in getMessages controller: ", error.message);
@@ -42,6 +45,20 @@ export const sendMessage = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
+    // Apply moderation to message text if present
+    let moderatedText = text;
+    if (text) {
+      const moderationResult = moderateContent(text);
+      moderatedText = moderationResult.moderatedContent;
+
+      // You can log or take action on highly inappropriate content
+      if (moderationResult.containsInappropriate) {
+        console.log(`Moderation applied to message from user ${senderId}:
+          Original: ${text}
+          Moderated: ${moderatedText}`);
+      }
+    }
+
     let imageUrl;
     //If user sent an image
     if (image) {
@@ -52,13 +69,22 @@ export const sendMessage = async (req, res) => {
     const newMessage = new Message({
       senderId,
       receiverId,
-      text,
+      text: moderatedText,
       image: imageUrl,
     });
 
     await newMessage.save();
 
-    //realtime functionality goes here => socket.io
+    // Socket.io - emit a new message event with proper format for socket
+    // Use the socket event the client is expecting to receive
+    io.emit("message:new", {
+      _id: newMessage._id,
+      senderId,
+      receiverId,
+      text: moderatedText,
+      image: imageUrl,
+      createdAt: newMessage.createdAt
+    });
 
     res.status(200).json(newMessage);
   } catch (error) {
