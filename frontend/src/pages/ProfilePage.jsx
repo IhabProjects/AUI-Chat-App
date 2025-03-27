@@ -15,6 +15,27 @@ import {
 } from "../constants/schoolMajor.constant";
 import { toast } from "react-hot-toast";
 
+const formatDate = (dateString) => {
+  if (!dateString) return "Not available";
+  try {
+    // MongoDB ISODate string format: 2025-03-24T20:23:38.799+00:00
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date:", dateString);
+      return "Not available";
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Not available";
+  }
+};
+
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
   const [selectedImage, setSelectedImage] = useState(null);
@@ -31,6 +52,12 @@ const ProfilePage = () => {
         major: authUser.major || "",
       });
     }
+  }, [authUser]);
+
+  useEffect(() => {
+    // Debug logging
+    console.log("Full authUser data:", authUser);
+    console.log("CreatedAt from authUser:", authUser?.createdAt);
   }, [authUser]);
 
   const handleImageUpload = async (e) => {
@@ -236,7 +263,9 @@ const ProfilePage = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between py-2 border-b border-base-300">
                   <span>Member Since</span>
-                  <span>{authUser?.createdAt?.split("T")[0]}</span>
+                  <span className="text-base-content font-medium">
+                    {console.log("createdAt value:", authUser?.createdAt) || formatDate(authUser?.createdAt)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span>Account Status</span>

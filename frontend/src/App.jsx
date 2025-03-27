@@ -11,12 +11,18 @@ import { Toaster } from "react-hot-toast";
 
 // animation loader
 import { Loader } from "lucide-react";
+import { useThemeStore } from "./store/useThemeStore";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const { theme } = useThemeStore();
+
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+    // Apply initial theme
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [checkAuth, theme]);
+
   console.log({ authUser });
   if (isCheckingAuth & !authUser)
     return (
@@ -25,7 +31,7 @@ const App = () => {
       </div>
     );
   return (
-    <div data-theme="lemonade">
+    <div data-theme={theme}>
       <Navbar />
       <Routes>
         <Route
@@ -49,7 +55,6 @@ const App = () => {
       </Routes>
 
       <Toaster />
-      
     </div>
   );
 };
