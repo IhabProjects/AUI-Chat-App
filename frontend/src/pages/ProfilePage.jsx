@@ -25,10 +25,10 @@ const formatDate = (dateString) => {
       return "Not available";
     }
 
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     }).format(date);
   } catch (error) {
     console.error("Error formatting date:", error);
@@ -95,7 +95,6 @@ const ProfilePage = () => {
 
       // No need to manually update authUser since useAuthStore already handles this
       // The store's updateProfile function updates the authUser state with the response from the server
-
     } catch (error) {
       toast.error(error.message || "Failed to update profile");
       // Reset the fields to the current authUser values if update fails
@@ -119,7 +118,7 @@ const ProfilePage = () => {
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               <img
-                src={selectedImage || authUser.profilePic || "/avatar_original.png"}
+                src={selectedImage || authUser.profilePic || "/avatar.png"}
                 alt="Profile"
                 className="size-32 rounded-full object-cover border-4"
               />
@@ -264,7 +263,8 @@ const ProfilePage = () => {
                 <div className="flex items-center justify-between py-2 border-b border-base-300">
                   <span>Member Since</span>
                   <span className="text-base-content font-medium">
-                    {console.log("createdAt value:", authUser?.createdAt) || formatDate(authUser?.createdAt)}
+                    {console.log("createdAt value:", authUser?.createdAt) ||
+                      formatDate(authUser?.createdAt)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
