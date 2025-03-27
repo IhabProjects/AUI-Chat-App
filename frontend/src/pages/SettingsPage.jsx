@@ -1,6 +1,7 @@
 import { THEMES } from "../constants";
 import React from "react";
 import { useThemeStore } from "../store/useThemeStore";
+import { Send } from "lucide-react";
 
 const PREVIEW_MESSAGES = [
   { id: 1, content: "Hey! How's it going?", isSent: false },
@@ -75,7 +76,7 @@ const SettingsPage = () => {
                         J
                       </div>
                       <div>
-                        <h3 className="font-medium text-sm">John Doe</h3>
+                        <h3 className="font-medium text-sm">Ihab ElBg</h3>
                         <p className="text-xs text-base-content/70">Online</p>
                       </div>
                     </div>
@@ -106,6 +107,22 @@ const SettingsPage = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Chat Input */}
+                  <div className="p-4 border-t border-base-300 bg-base-100">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        className="input input-bordered flex-1 text-sm h-10"
+                        placeholder="Type a message..."
+                        value="This is a preview"
+                        readOnly
+                      />
+                      <button className="btn btn-primary h-10 min-h-0">
+                        <Send size={18} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
