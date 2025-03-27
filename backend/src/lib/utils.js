@@ -13,3 +13,50 @@ export const generateToken = (userId, res) => {
 
   return token;
 };
+
+// Content moderation utility
+export const moderateContent = (content) => {
+  if (!content || typeof content !== 'string') {
+    return {
+      isClean: true,
+      moderatedContent: content || '',
+      containsInappropriate: false
+    };
+  }
+
+  // List of prohibited words and patterns
+  const badWords = [
+    'fuck', 'shit', 'asshole', 'bitch', 'bastard', 'cunt', 'dick', 'pussy',
+    'nigger', 'nigga', 'faggot', 'retard', 'whore', 'slut', 'kike', 'spic',
+    'chink', 'kill yourself', 'kys'
+  ];
+
+  // Use regex to create word boundary patterns for more accurate matching
+  const wordBoundaryPatterns = badWords.map(word => {
+    return {
+      word,
+      pattern: new RegExp(`\\b${word}\\b`, 'gi')
+    };
+  });
+
+  // Check for inappropriate content
+  let processedContent = content;
+  let containsInappropriate = false;
+
+  wordBoundaryPatterns.forEach(({ word, pattern }) => {
+    if (pattern.test(processedContent)) {
+      containsInappropriate = true;
+
+      // Replace bad words with asterisks
+      processedContent = processedContent.replace(pattern, match =>
+        '*'.repeat(match.length)
+      );
+    }
+  });
+
+  return {
+    isClean: !containsInappropriate,
+    moderatedContent: processedContent,
+    containsInappropriate
+  };
+};

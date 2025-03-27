@@ -49,6 +49,31 @@ io.on("connection", (socket) => {
       }
     });
 
+    // Join socket rooms for groups the user is part of
+    socket.on("group:join", ({ groupId }) => {
+      socket.join(`group:${groupId}`);
+      console.log(`User ${socket.userId} joined group room ${groupId}`);
+    });
+
+    // Handle group messages
+    socket.on("group:message", ({ groupId, message }) => {
+      io.to(`group:${groupId}`).emit("group:message", message);
+    });
+
+    // Leave a group room
+    socket.on("group:leave", ({ groupId }) => {
+      socket.leave(`group:${groupId}`);
+      console.log(`User ${socket.userId} left group room ${groupId}`);
+    });
+
+    // Handle friend request notifications
+    socket.on("friend:request", ({ requestId, to }) => {
+      const recipientSocketId = userSocketMap[to];
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("friend:request", { requestId, from: socket.userId });
+      }
+    });
+
     socket.on("disconnect", () => {
         console.log("A user disconnected", socket.id);
 

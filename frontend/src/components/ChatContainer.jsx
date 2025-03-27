@@ -62,13 +62,7 @@ function ChatContainer() {
       <ChatHeader />
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-base-content/50 text-center">
-              No messages yet. Start a conversation!
-            </p>
-          </div>
-        ) : (
+        {Array.isArray(messages) && messages.length > 0 ? (
           messages.map((message) => (
             <div
               key={message._id}
@@ -105,6 +99,10 @@ function ChatContainer() {
               </div>
             </div>
           ))
+        ) : (
+          <div className="flex justify-center items-center h-full">
+            <p className="text-gray-500">No messages yet. Start a conversation!</p>
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>

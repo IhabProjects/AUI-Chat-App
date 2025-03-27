@@ -99,48 +99,73 @@ export const useAuthStore = create((set, get) => ({
 
     // If socket exists but is not connected, try to reconnect
     if (socket && !socket.connected) {
+      console.log("Reconnecting existing socket...");
       socket.connect();
     }
 
     // Only create a new socket if one doesn't exist
     if (!socket) {
-      console.log("Creating new socket connection");
-      socket = io(BASE_URL, {
-        withCredentials: true
-      });
+      // Use the backend URL directly instead of relative path
+      const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+      console.log("Creating new socket connection via:", BACKEND_URL);
 
-      // Set up event handlers
-      socket.on("connect", () => {
-        console.log("Connected to socket server");
-        // Let the server know this user is online
-        socket.emit("user:online", { userId: authUser._id });
-
-        // Initialize chat listeners after socket is connected
-        // Using dynamic import to avoid circular dependencies
-        import('./useChatStore.js').then(module => {
-          const useChatStore = module.useChatStore;
-          useChatStore.getState().setupSocketListeners();
+      try {
+        socket = io(BACKEND_URL, {
+          withCredentials: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          timeout: 10000,
+          transports: ['websocket'], // Force WebSocket transport only
+          upgrade: false // Disable transport upgrade
         });
-      });
 
-      socket.on("connect_error", (error) => {
-        console.error("Socket connection error:", error);
-      });
+        // Set up event handlers
+        socket.on("connect", () => {
+          console.log("Connected to socket server");
+          // Let the server know this user is online
+          socket.emit("user:online", { userId: authUser._id });
 
-      socket.on("user:online", (data) => {
-        set((state) => ({
-          onlineUsers: [...new Set([...state.onlineUsers, ...data])]
-        }));
-      });
+          // Initialize chat listeners after socket is connected
+          // Using dynamic import to avoid circular dependencies
+          import('./useChatStore.js').then(module => {
+            const useChatStore = module.useChatStore;
+            useChatStore.getState().setupSocketListeners();
+          });
+        });
 
-      socket.on("user:offline", (userId) => {
-        set((state) => ({
-          onlineUsers: state.onlineUsers.filter(id => id !== userId)
-        }));
-      });
+        socket.on("connect_error", (error) => {
+          console.error("Socket connection error:", error.message);
+          toast.error("Connection error: " + error.message);
+        });
 
-      // Save socket in state
-      set({ socket });
+        socket.on("connect_timeout", () => {
+          console.error("Socket connection timeout");
+          toast.error("Connection timed out");
+        });
+
+        socket.on("error", (error) => {
+          console.error("Socket error:", error);
+          toast.error("Socket error: " + error.message);
+        });
+
+        socket.on("user:online", (data) => {
+          set((state) => ({
+            onlineUsers: [...new Set([...state.onlineUsers, ...data])]
+          }));
+        });
+
+        socket.on("user:offline", (userId) => {
+          set((state) => ({
+            onlineUsers: state.onlineUsers.filter(id => id !== userId)
+          }));
+        });
+
+        // Save socket in state
+        set({ socket });
+      } catch (err) {
+        console.error("Failed to initialize socket:", err);
+        toast.error("Failed to connect: " + err.message);
+      }
     }
   },
   disconnectSocket: () => {

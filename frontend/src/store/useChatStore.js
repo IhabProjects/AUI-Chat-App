@@ -2,6 +2,7 @@ import { create } from "zustand";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios.js";
 import { useAuthStore } from "./useAuthStore.js";
+import { validateContent } from "../utils/helpers.js";
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -105,6 +106,21 @@ export const useChatStore = create((set, get) => ({
     }
 
     try {
+      // Apply content moderation to text messages
+      if (messageData.text) {
+        try {
+          // Moderate the content with medium strictness level
+          messageData.text = validateContent(messageData.text, {
+            strictLevel: 'medium',
+            allowWithWarning: true
+          });
+        } catch (error) {
+          // Message rejected by content moderation
+          toast.error(error.message);
+          return; // Don't send the message
+        }
+      }
+
       // Send message via API
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
       const newMessage = res.data;
@@ -136,5 +152,31 @@ export const useChatStore = create((set, get) => ({
       get().getMessages(selectedUser._id);
       get().clearUnreadMessages(selectedUser._id);
     }
+  },
+
+  // Add a function to select a user by ID
+  selectUserById: async (userId) => {
+    const { users } = get();
+    let userToSelect = users.find(user => user._id === userId);
+
+    // If not found in current users list, fetch users first
+    if (!userToSelect) {
+      try {
+        await get().getUsers();
+        const { users } = get();
+        userToSelect = users.find(user => user._id === userId);
+      } catch (error) {
+        console.error("Error selecting user by ID:", error);
+        toast.error("Failed to select user");
+        return false;
+      }
+    }
+
+    if (userToSelect) {
+      get().setSelectedUser(userToSelect);
+      return true;
+    }
+
+    return false;
   },
 }));
