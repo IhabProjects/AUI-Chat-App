@@ -92,32 +92,56 @@ export const useAuthStore = create((set, get) => ({
   },
   connectSocket: () => {
     const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    if (!authUser) return;
 
-    const socket = io(BASE_URL, {
-      withCredentials: true
-    });
+    // Get existing socket or create new one
+    let socket = get().socket;
 
-    socket.on("connect", () => {
-      console.log("Connected to socket server");
-      // Let the server know this user is online
-      socket.emit("user:online", { userId: authUser._id });
-    });
+    // If socket exists but is not connected, try to reconnect
+    if (socket && !socket.connected) {
+      socket.connect();
+    }
 
-    socket.on("user:online", (data) => {
-      set((state) => ({
-        onlineUsers: [...new Set([...state.onlineUsers, ...data])]
-      }));
-    });
+    // Only create a new socket if one doesn't exist
+    if (!socket) {
+      console.log("Creating new socket connection");
+      socket = io(BASE_URL, {
+        withCredentials: true
+      });
 
-    socket.on("user:offline", (userId) => {
-      set((state) => ({
-        onlineUsers: state.onlineUsers.filter(id => id !== userId)
-      }));
-    });
+      // Set up event handlers
+      socket.on("connect", () => {
+        console.log("Connected to socket server");
+        // Let the server know this user is online
+        socket.emit("user:online", { userId: authUser._id });
 
-    // Save socket in state
-    set({ socket });
+        // Initialize chat listeners after socket is connected
+        // Using dynamic import to avoid circular dependencies
+        import('./useChatStore.js').then(module => {
+          const useChatStore = module.useChatStore;
+          useChatStore.getState().setupSocketListeners();
+        });
+      });
+
+      socket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+      });
+
+      socket.on("user:online", (data) => {
+        set((state) => ({
+          onlineUsers: [...new Set([...state.onlineUsers, ...data])]
+        }));
+      });
+
+      socket.on("user:offline", (userId) => {
+        set((state) => ({
+          onlineUsers: state.onlineUsers.filter(id => id !== userId)
+        }));
+      });
+
+      // Save socket in state
+      set({ socket });
+    }
   },
   disconnectSocket: () => {
     const { socket } = get();

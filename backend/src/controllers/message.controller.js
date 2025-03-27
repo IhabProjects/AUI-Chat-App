@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
+import { io } from "../lib/socket.js";
 // Get all Users a part from logged in user to see on the side bar
 
 //TODO Show only friends
@@ -28,7 +29,8 @@ export const getMessages = async (req, res) => {
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    });
+    }).sort({ createdAt: 1 }); // Sort by createdAt to show oldest messages first
+
     res.status(200).json({ messages });
   } catch (error) {
     console.log("Error in getMessages controller: ", error.message);
@@ -58,7 +60,16 @@ export const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
-    //realtime functionality goes here => socket.io
+    // Socket.io - emit a new message event with proper format for socket
+    // Use the socket event the client is expecting to receive
+    io.emit("message:new", {
+      _id: newMessage._id,
+      senderId,
+      receiverId,
+      text,
+      image: imageUrl,
+      createdAt: newMessage.createdAt
+    });
 
     res.status(200).json(newMessage);
   } catch (error) {

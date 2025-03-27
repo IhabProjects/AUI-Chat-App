@@ -2,17 +2,25 @@ import { useEffect, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
-import { Users } from "lucide-react";
+import { MessageCircle, Users } from "lucide-react";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } =
-    useChatStore();
+  const {
+    getUsers,
+    users,
+    selectedUser,
+    setSelectedUser,
+    isUsersLoading,
+    unreadMessages,
+    setupSocketListeners
+  } = useChatStore();
 
-  const {onlineUsers} = useAuthStore(); //Tochange
+  const { onlineUsers } = useAuthStore();
 
   useEffect(() => {
     getUsers();
-  }, [getUsers]);
+    setupSocketListeners();
+  }, [getUsers, setupSocketListeners]);
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
@@ -30,10 +38,10 @@ const Sidebar = () => {
       <div className="overflow-y-auto w-full py-3">
         {users.map((user) => (
           <button
-            key={user.id}
+            key={user._id}
             onClick={() => setSelectedUser(user)}
             className={`w-full p-3 flex items-center gap-3 hover:bg-base-300 transition-colors ${
-              selectedUser?.id === user.id
+              selectedUser?._id === user._id
                 ? "bg-base-300 ring-1 ring-base-300"
                 : ""
             }`}
@@ -41,18 +49,33 @@ const Sidebar = () => {
             <div className="relative mx-auto lg:mx-0">
               <img
                 src={user.profilePic || "/avatar.png"}
-                alt={user.name}
+                alt={user.fullName}
                 className="size-12 object-cover rounded-full"
               />
-              {onlineUsers.includes(user.id) && (
+              {onlineUsers.includes(user._id) && (
                 <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full ring-2 ring-zinc-900" />
+              )}
+
+              {/* Unread message indicator */}
+              {unreadMessages[user._id] > 0 && (
+                <div className="absolute -top-1 -right-1 bg-primary text-primary-content rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                  {unreadMessages[user._id]}
+                </div>
               )}
             </div>
 
             <div className="hidden lg:block text-left min-w-0">
               <div className="font-medium truncate">{user.fullName}</div>
-              <div className="text-sm text-zinc-400">
+              <div className="text-sm text-zinc-400 flex items-center gap-1">
                 {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+
+                {/* Unread message indicator (text) */}
+                {unreadMessages[user._id] > 0 && (
+                  <span className="flex items-center gap-1 text-primary">
+                    <MessageCircle className="w-3 h-3" />
+                    {unreadMessages[user._id]} new
+                  </span>
+                )}
               </div>
             </div>
           </button>
